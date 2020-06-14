@@ -13,17 +13,30 @@ connect.then((db) => {
     })
     .then((dish) => {
             console.log('New: ', dish)
-            return Dishes.find({}).exec();
-        })
-        .then((dishes) => {
-            console.log('Dishes: ', dishes);
-
-            return Dishes.remove({});
-        })
-        .then(() => {
-            return mongoose.connection.close();
-        })
-        .catch((err) => {
-            console.log('ERROR:', err);
+        return Dishes.findByIdAndUpdate(dish._id, {
+            $set: { description: 'Updated test' }
+        }, {
+            new: true
+        }).exec();
+    })
+    .then((dish) => {
+        console.log('Dishes: ', dish);
+        dish.comments.push({
+            rating: 5,
+            comment: 'Im geeting a sinking feeling',
+            author: 'Victor Espiritu'
         });
+        
+        return dish.save();
+    })
+    .then((dish) => {
+            console.log('Dish to remove', dish);
+            return Dishes.remove({});
+    })
+    .then(() => {
+            return mongoose.connection.close();
+    })
+    .catch((err) => {
+        console.log('ERROR:', err);
+    });
 });
