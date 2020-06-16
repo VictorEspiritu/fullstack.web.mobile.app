@@ -15,7 +15,7 @@ function solveRect(l, b){
     }
 }
 
-//Comments
+//execute
 solveRect(2,3);
 solveRect(-2,3);
 solveRect(2,-3);
