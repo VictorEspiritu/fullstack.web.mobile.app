@@ -3,6 +3,8 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var Session= require('express-session');
+var FileStore = require('session-file-store')(Session);
 
 const mongoose = require('mongoose');
 const Dishes = require('./models/dishes');
@@ -34,33 +36,54 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+//app.use(cookieParser('09342-65643-78942-45478'));
+app.use(Session({
+    name: 'session-id',
+    secret: '09342-46788-34567-23345',
+    saveUninitialized: false,
+    resave: false,
+    store: new FileStore()
+}));
 
 function auth (req, res, next){
     console.log('Auth Headers: ', req.headers);
+    console.log('Sesion: ', req.session);
 
-    var authHeader = req.headers.authorization;
+    if(!req.session.user){
+       var authHeader = req.headers.authorization;
 
-    if(!authHeader){
-        var err = new Error('You are not authentication!');
-        err.status = 401;
+        if(!authHeader){
+            var err = new Error('You are not authentication!');
+            err.status = 401;
 
-        res.setHeader('WWW-Authenticate', 'Basic');
-        return next(err);
-    }
+            res.setHeader('WWW-Authenticate', 'Basic');
+            return next(err);
+        }
 
-    var auth = new Buffer(authHeader.split(' ')[1], 'base64').toString().split(':');
-    var username = auth[0];
-    var password = auth[1];
+        var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+        var username = auth[0];
+        var password = auth[1];
 
-    if(username == 'admin' && password == 'password'){
-        next();
+        if(username == 'admin' && password == 'password'){
+            req.session.user='admin';
+            next();
+        }else{
+            var err = new Error('You are not authorization!');
+            err.status = 403;
+
+            return next(err);
+        }
     }else{
-        var err = new Error('You are not authorization!');
-        err.status = 403;
+        if(req.session.user == 'admin'){
+            next();
+        }else{
+            var err = new Error('You are not authorization with cookies!');
+            err.status = 403;
 
-        return next(err);
+            return next(err);
+        }
     }
+
 }
 
 app.use(auth);
